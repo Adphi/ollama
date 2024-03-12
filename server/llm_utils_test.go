@@ -12,6 +12,8 @@ import (
 
 	"github.com/jmorganca/ollama/api"
 	"github.com/jmorganca/ollama/llm"
+	"github.com/jmorganca/ollama/server/state"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +29,7 @@ func getModelDir() string {
 	return path.Dir(path.Dir(filename) + "/../test_data/models/.")
 }
 
-func PrepareModelForPrompts(t *testing.T, modelName string, opts api.Options) (*Model, llm.LLM) {
+func PrepareModelForPrompts(t *testing.T, modelName string, opts api.Options) (*state.Model, llm.LLM) {
 	modelDir := getModelDir()
 	os.Setenv("OLLAMA_MODELS", modelDir)
 	model, err := GetModel(modelName)
@@ -39,7 +41,7 @@ func PrepareModelForPrompts(t *testing.T, modelName string, opts api.Options) (*
 	return model, runner
 }
 
-func OneShotPromptResponse(t *testing.T, ctx context.Context, req api.GenerateRequest, model *Model, runner llm.LLM) string {
+func OneShotPromptResponse(t *testing.T, ctx context.Context, req api.GenerateRequest, model *state.Model, runner llm.LLM) string {
 	prompt, err := model.PreResponsePrompt(PromptVars{
 		System: req.System,
 		Prompt: req.Prompt,

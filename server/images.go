@@ -28,6 +28,7 @@ import (
 	"github.com/jmorganca/ollama/convert"
 	"github.com/jmorganca/ollama/llm"
 	"github.com/jmorganca/ollama/parser"
+	"github.com/jmorganca/ollama/server/state"
 	"github.com/jmorganca/ollama/version"
 )
 
@@ -38,85 +39,11 @@ type registryOptions struct {
 	Token    string
 }
 
-type Model struct {
-	Name           string `json:"name"`
-	Config         ConfigV2
-	ShortName      string
-	ModelPath      string
-	ParentModel    string
-	AdapterPaths   []string
-	ProjectorPaths []string
-	Template       string
-	System         string
-	License        []string
-	Digest         string
-	Size           int64
-	Options        map[string]interface{}
-	Messages       []Message
-}
-
-func (m *Model) IsEmbedding() bool {
-	return slices.Contains(m.Config.ModelFamilies, "bert") || slices.Contains(m.Config.ModelFamilies, "nomic-bert")
-}
-
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
 type ManifestV2 struct {
 	SchemaVersion int      `json:"schemaVersion"`
 	MediaType     string   `json:"mediaType"`
 	Config        *Layer   `json:"config"`
 	Layers        []*Layer `json:"layers"`
-}
-
-type ConfigV2 struct {
-	ModelFormat   string   `json:"model_format"`
-	ModelFamily   string   `json:"model_family"`
-	ModelFamilies []string `json:"model_families"`
-	ModelType     string   `json:"model_type"`
-	FileType      string   `json:"file_type"`
-
-	// required by spec
-	Architecture string `json:"architecture"`
-	OS           string `json:"os"`
-	RootFS       RootFS `json:"rootfs"`
-}
-
-func (c *ConfigV2) SetModelFormat(format string) {
-	if c.ModelFormat == "" {
-		c.ModelFormat = format
-	}
-}
-
-func (c *ConfigV2) SetModelFamily(families ...string) {
-	for _, family := range families {
-		if c.ModelFamily == "" {
-			c.ModelFamily = family
-		}
-
-		if !slices.Contains(c.ModelFamilies, family) {
-			c.ModelFamilies = append(c.ModelFamilies, family)
-		}
-	}
-}
-
-func (c *ConfigV2) SetModelType(modelType string) {
-	if c.ModelType == "" {
-		c.ModelType = modelType
-	}
-}
-
-func (c *ConfigV2) SetFileType(fileType string) {
-	if c.FileType == "" {
-		c.FileType = fileType
-	}
-}
-
-type RootFS struct {
-	Type    string   `json:"type"`
-	DiffIDs []string `json:"diff_ids"`
 }
 
 func (m *ManifestV2) GetTotalSize() (total int64) {
@@ -155,14 +82,14 @@ func GetManifest(mp ModelPath) (*ManifestV2, string, error) {
 	return manifest, shaStr, nil
 }
 
-func GetModel(name string) (*Model, error) {
+func GetModel(name string) (*state.Model, error) {
 	mp := ParseModelPath(name)
 	manifest, digest, err := GetManifest(mp)
 	if err != nil {
 		return nil, err
 	}
 
-	model := &Model{
+	model := &state.Model{
 		Name:      mp.GetFullTagname(),
 		ShortName: mp.GetShortTagname(),
 		Digest:    digest,
@@ -291,10 +218,10 @@ func CreateModel(ctx context.Context, name, modelFileDir string, commands []pars
 		}
 	}
 
-	config := ConfigV2{
+	config := state.ConfigV2{
 		OS:           "linux",
 		Architecture: "amd64",
-		RootFS: RootFS{
+		RootFS: state.RootFS{
 			Type: "layers",
 		},
 	}
@@ -371,7 +298,7 @@ func CreateModel(ctx context.Context, name, modelFileDir string, commands []pars
 				}
 				defer fromConfigFile.Close()
 
-				var fromConfig ConfigV2
+				var fromConfig state.ConfigV2
 				if err := json.NewDecoder(fromConfigFile).Decode(&fromConfig); err != nil {
 					return err
 				}
@@ -877,9 +804,9 @@ func DeleteModel(name string) error {
 	return nil
 }
 
-func ShowModelfile(model *Model) (string, error) {
+func ShowModelfile(model *state.Model) (string, error) {
 	var mt struct {
-		*Model
+		*state.Model
 		From       string
 		Parameters map[string][]any
 	}

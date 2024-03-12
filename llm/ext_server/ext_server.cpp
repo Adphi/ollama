@@ -43,7 +43,7 @@ class atomicRecv {
   private:
     std::atomic<int> &atomic;
 };
- 
+
 void llama_server_init(ext_server_params *sparams, ext_server_resp_t *err) {
   recv_counter = 0;
   assert(err != NULL && sparams != NULL);
@@ -65,6 +65,9 @@ void llama_server_init(ext_server_params *sparams, ext_server_resp_t *err) {
       params.n_threads = sparams->n_threads;
     }
     params.n_parallel = sparams->n_parallel;
+    if (sparams->n_parallel > 1) {
+      params.cont_batching = true;
+    }
     params.rope_freq_base = sparams->rope_freq_base;
     params.rope_freq_scale = sparams->rope_freq_scale;
 

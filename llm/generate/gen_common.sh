@@ -21,7 +21,7 @@ init_vars() {
         # TODO - add additional optimization flags...
         CMAKE_DEFS="-DCMAKE_BUILD_TYPE=Release -DLLAMA_SERVER_VERBOSE=off ${CMAKE_DEFS}"
     fi
-    case $(uname -s) in 
+    case $(uname -s) in
     "Darwin")
         LIB_EXT="dylib"
         WHOLE_ARCHIVE="-Wl,-force_load"
@@ -39,7 +39,7 @@ init_vars() {
     *)
         ;;
     esac
-    if [ -z "${CMAKE_CUDA_ARCHITECTURES}" ] ; then 
+    if [ -z "${CMAKE_CUDA_ARCHITECTURES}" ] ; then
         CMAKE_CUDA_ARCHITECTURES="50;52;61;70;75;80"
     fi
 }
@@ -101,7 +101,7 @@ compress_libs() {
         gzip -n --best -f ${lib} &
         pids+=" $!"
     done
-    echo 
+    echo
     for pid in ${pids}; do
         wait $pid
     done

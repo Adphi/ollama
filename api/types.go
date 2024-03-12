@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -124,6 +125,7 @@ type Runner struct {
 	RopeFrequencyBase  float32 `json:"rope_frequency_base,omitempty"`
 	RopeFrequencyScale float32 `json:"rope_frequency_scale,omitempty"`
 	NumThread          int     `json:"num_thread,omitempty"`
+	NumParallel        int     `json:"num_parallel,omitempty"`
 }
 
 type EmbeddingRequest struct {
@@ -388,7 +390,8 @@ func DefaultOptions() Options {
 			NumBatch:           512,
 			NumGPU:             -1, // -1 here indicates that NumGPU should be set dynamically
 			NumGQA:             1,
-			NumThread:          0, // let the runtime decide
+			NumThread:          0, // runtime.NumCPU() / 2,
+			NumParallel:        runtime.NumCPU(),
 			LowVRAM:            false,
 			F16KV:              true,
 			UseMLock:           false,
